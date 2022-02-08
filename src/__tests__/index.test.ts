@@ -18,9 +18,10 @@ test('chirp', () => {
   chirp.addParam('str1', '2020 北京冬奥会');
   chirp.addParam('str2', '123&&');
   chirp.addParam('object1', object1);
-  chirp.addParam('main', 3, 'int64');
-  chirp.addParam('min', 23.0123, 'float64');
-  chirp.addParam('count', 123456, 'uint64');
+  chirp.addParam('main', 3);
+  chirp.addParam('min', 23.0123);
+  chirp.addParam('count', 9007199254740991);
+  chirp.addParam('age', -9007199254740991)
 
   const buffer = chirp.toArrayBuffer();
   const new_chirp = Chirp.fromArrayBuffer(buffer);
@@ -42,5 +43,6 @@ test('chirp', () => {
 
   expect(new_chirp.getParam('main')).toBe(3);
   expect(new_chirp.getParam('min')).toBe(23.0123);
-  expect(new_chirp.getParam('count')).toBe(123456);
+  expect(new_chirp.getParam('count')).toBe(9007199254740991);
+  expect(new_chirp.getParam('age')).toBe(-9007199254740991);
 });

@@ -64,11 +64,17 @@ const LABEL_NULL = null;
 
 interface ParamItem {
   value: ValueUnionTypes;
+  type: string;
   numberLabel: NumberLabelUnionTypes;
 }
 
 interface ParamMap {
   [key: string]: ParamItem;
+}
+
+interface ValueTypeStringNumberLabel {
+  type: string;
+  numberLabel: NumberLabelUnionTypes;
 }
 
 interface InfoArrayBuffer {
@@ -170,6 +176,31 @@ function getValueTypeString (value: ValueUnionTypes): string {
   }
 }
 
+function getParamItem (value: ValueUnionTypes): ParamItem {
+  const value_type = getValueTypeString(value);
+  let number_label = null;
+  if (value_type === TYPE_NUMBER) {
+    const value_number = value as CNumber;
+    if (value_number % 1 === 0) {
+      if (value_number < 0) {
+        number_label = LABEL_INT64;
+      } else {
+        number_label = LABEL_UINT64;
+      }
+    } else {
+      number_label = LABEL_FLOAT64;
+    }
+  } else {
+    number_label = LABEL_NULL;
+  }
+
+  return {
+    value: value,
+    type: value_type,
+    numberLabel: number_label
+  }
+}
+
 function convertParam (name: string, value: ValueUnionTypes, numberLabel: NumberLabelUnionTypes): ParamGuideWithData {
   let data_info: InfoArrayBuffer;
   const param_type = getValueTypeString (value)
@@ -212,18 +243,6 @@ function convertParam (name: string, value: ValueUnionTypes, numberLabel: Number
   }
 }
 
-function checkParamValueNumberLabel(value: ValueUnionTypes, numberLabel: NumberLabelUnionTypes): void {
-  if (getValueTypeString(value) === 'number') {
-    if (numberLabel !== LABEL_INT64 && numberLabel !== LABEL_UINT64 && numberLabel !== LABEL_FLOAT64) {
-      throw new Error('number-label-must-be-int64-or-uint64-or-float64');
-    }
-  } else {
-    if (numberLabel !== LABEL_NULL) {
-      throw new Error('non-number-number-label-must-be-null');
-    }
-  }
-}
-
 export class Chirp {
   private _version: number;
   private _command: string;
@@ -243,9 +262,8 @@ export class Chirp {
     return this._command;
   }
 
-  public addParam (name: string, value: ValueUnionTypes, numberLabel: NumberLabelUnionTypes = null): void {
-    checkParamValueNumberLabel(value, numberLabel);
-    this._paramMap[name] = { value, numberLabel };
+  public addParam (name: string, value: ValueUnionTypes): void {
+    this._paramMap[name] = getParamItem(value);
   }
 
   public getParam (name: string): ValueUnionTypes {
@@ -357,33 +375,33 @@ export class Chirp {
       // 读取参数
       if (param_guide.type === TYPE_BOOLEAN) {
         const value = bufferInt64(buffer, param_guide.pos);
-        chirp.addParam(param_guide.name, value === 0 ? false : true, null);
+        chirp.addParam(param_guide.name, value === 0 ? false : true);
       } else if (param_guide.type === TYPE_NUMBER) {
         if (param_guide.numberLabel === LABEL_INT64) {
           const value = bufferInt64(buffer, param_guide.pos);
-          chirp.addParam(param_guide.name, value, LABEL_INT64);
+          chirp.addParam(param_guide.name, value);
         } else if (param_guide.numberLabel === LABEL_UINT64) {
           const value = bufferUint64(buffer, param_guide.pos);
-          chirp.addParam(param_guide.name, value, LABEL_UINT64);
+          chirp.addParam(param_guide.name, value);
         } else if (param_guide.numberLabel === LABEL_FLOAT64) {
           const value = bufferFloat64(buffer, param_guide.pos);
-          chirp.addParam(param_guide.name, value, LABEL_FLOAT64);
+          chirp.addParam(param_guide.name, value);
         } else {
           throw new Error('invaild-number-label-in-tailer-param-guide');
         }
       } else if (param_guide.type === TYPE_STRING) {
         const value = bufferString(buffer, param_guide.pos, param_guide.len);
-        chirp.addParam(param_guide.name, value, null);
+        chirp.addParam(param_guide.name, value);
       } else if (param_guide.type === TYPE_NULL) {
-        chirp.addParam(param_guide.name, null, null);
+        chirp.addParam(param_guide.name, null);
       } else if (param_guide.type === TYPE_OBJECT) {
         const value = bufferObject(buffer, param_guide.pos, param_guide.len);
-        chirp.addParam(param_guide.name, value, null);
+        chirp.addParam(param_guide.name, value);
       } else if (param_guide.type === TYPE_ARRAY) {
         const value = bufferArray(buffer, param_guide.pos, param_guide.len);
-        chirp.addParam(param_guide.name, value, null);
+        chirp.addParam(param_guide.name, value);
       } else if (param_guide.type === TYPE_BIN) {
-        chirp.addParam(param_guide.name, buffer.slice(param_guide.pos, param_guide.pos + param_guide.len), null);
+        chirp.addParam(param_guide.name, buffer.slice(param_guide.pos, param_guide.pos + param_guide.len));
       } else {
         throw new Error('invaild-type-in-tailer-param-guide');
       }
