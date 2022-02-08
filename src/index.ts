@@ -1,9 +1,9 @@
-type UnionTypesNumberLabel = string | null;
+type NumberLabelUnionTypes = string | null;
 
 interface ParamGuide {
   name: string;
   type: string;
-  numberLabel: UnionTypesNumberLabel;
+  numberLabel: NumberLabelUnionTypes;
   pos: number;
   len: number;
 }
@@ -11,7 +11,7 @@ interface ParamGuide {
 interface ParamGuideWithData {
   name: string;
   type: string;
-  numberLabel: UnionTypesNumberLabel;
+  numberLabel: NumberLabelUnionTypes;
   pos: number;
   len: number;
   data: ArrayBuffer;
@@ -60,10 +60,11 @@ const TYPE_BIN = 'bin';
 const LABEL_INT64 = 'int64';
 const LABEL_UINT64 = 'uint64';
 const LABEL_FLOAT64 = 'float64';
+const LABEL_NULL = null;
 
 interface ParamItem {
   value: ValueUnionTypes;
-  numberLabel: UnionTypesNumberLabel;
+  numberLabel: NumberLabelUnionTypes;
 }
 
 interface ParamMap {
@@ -169,7 +170,7 @@ function getValueTypeString (value: ValueUnionTypes): string {
   }
 }
 
-function convertParam (name: string, value: ValueUnionTypes, numberLabel: UnionTypesNumberLabel): ParamGuideWithData {
+function convertParam (name: string, value: ValueUnionTypes, numberLabel: NumberLabelUnionTypes): ParamGuideWithData {
   let data_info: InfoArrayBuffer;
   const param_type = getValueTypeString (value)
 
@@ -211,6 +212,18 @@ function convertParam (name: string, value: ValueUnionTypes, numberLabel: UnionT
   }
 }
 
+function checkParamValueNumberLabel(value: ValueUnionTypes, numberLabel: NumberLabelUnionTypes): void {
+  if (getValueTypeString(value) === 'number') {
+    if (numberLabel !== LABEL_INT64 && numberLabel !== LABEL_UINT64 && numberLabel !== LABEL_FLOAT64) {
+      throw new Error('number-label-must-be-int64-or-uint64-or-float64');
+    }
+  } else {
+    if (numberLabel !== LABEL_NULL) {
+      throw new Error('non-number-number-label-must-be-null');
+    }
+  }
+}
+
 export class Chirp {
   private _version: number;
   private _command: string;
@@ -230,7 +243,8 @@ export class Chirp {
     return this._command;
   }
 
-  public addParam (name: string, value: ValueUnionTypes, numberLabel: UnionTypesNumberLabel): void {
+  public addParam (name: string, value: ValueUnionTypes, numberLabel: NumberLabelUnionTypes = null): void {
+    checkParamValueNumberLabel(value, numberLabel);
     this._paramMap[name] = { value, numberLabel };
   }
 
@@ -255,7 +269,7 @@ export class Chirp {
     let param_last_pos = BYTES_64BIT;
 
     // 所有参数的长度
-    for (const name in Object.keys(this._paramMap)) {
+    for (const name of Object.keys(this._paramMap)) {
       const param_item = this._paramMap[name];
       const param_guide_with_data: ParamGuideWithData = convertParam(name, param_item.value, param_item.numberLabel);
       param_guide_with_data.pos = param_last_pos;
@@ -282,7 +296,7 @@ export class Chirp {
       paramGuides: param_guide_list
     }
     const tailer_info = objectBuffer(tailer);
-    const tailer_pos = param_last_pos + tailer_info.len
+    const tailer_pos = param_last_pos
     buffer_length = buffer_length + tailer_info.len;
 
     // 计算总和，并为 ArrayBuffer
@@ -299,6 +313,9 @@ export class Chirp {
         buffer_view.setUint8(param.pos + i, param_view.getUint8(i));
       }
     }
+
+    // console.log(`buffer length: ${buffer_length}`);
+    // console.log(`tailer pos: ${tailer_pos}`);
 
     // 写入 tailer
     const tailer_view = new DataView(tailer_info.data);
