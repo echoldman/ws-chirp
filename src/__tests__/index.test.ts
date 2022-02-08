@@ -13,6 +13,8 @@ test('chirp', () => {
     chars: ['a', 'b', 'c']
   }
 
+  const array1 = ['abc', 10, null];
+
   const chirp = new Chirp('hello');
   chirp.addParam('message', 'hello, world!');
   chirp.addParam('str1', '2020 北京冬奥会');
@@ -22,6 +24,7 @@ test('chirp', () => {
   chirp.addParam('min', 23.0123);
   chirp.addParam('count', 9007199254740991);
   chirp.addParam('age', -9007199254740991)
+  chirp.addParam('list', array1);
 
   const buffer = chirp.toArrayBuffer();
   const new_chirp = Chirp.fromArrayBuffer(buffer);
@@ -45,4 +48,9 @@ test('chirp', () => {
   expect(new_chirp.getParam('min')).toBe(23.0123);
   expect(new_chirp.getParam('count')).toBe(9007199254740991);
   expect(new_chirp.getParam('age')).toBe(-9007199254740991);
+
+  const expect_array1: Array<any> = new_chirp.getParam('list') as Array<any>;
+  expect(expect_array1[0]).toBe('abc');
+  expect(expect_array1[1]).toBe(10);
+  expect(expect_array1[2]).toBe(null);
 });
