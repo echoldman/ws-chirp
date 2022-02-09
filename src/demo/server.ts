@@ -12,6 +12,8 @@ server.on('listening', () => {
 server.on('connection', (socket: WebSocket, request) => {
   socket.on('message', (data: RawData) => {
     const data_type = Object.prototype.toString.call(data);
+    console.log(data_type);
+    console.log(data);
     if (data_type === '[object Uint8Array]') {
       const chirp = Chirp.fromData(data as Uint8Array);
       console.log(chirp.getParam('msg'));
