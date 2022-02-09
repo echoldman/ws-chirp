@@ -49,6 +49,8 @@ type CArray = Array<any>;
 type CBin = ArrayBuffer;
 type ValueUnionTypes = CBoolean | CNumber | CString | CNull | CObject | CArray | CBin;
 
+type DataUnionTypes = ArrayBuffer | Uint8Array | DataView
+
 const TYPE_BOOLEAN = 'boolean';
 const TYPE_NUMBER = 'number';
 const TYPE_STRING = 'string';
@@ -277,7 +279,7 @@ export class Chirp {
     return Object.prototype.hasOwnProperty.call(this._paramMap, name);
   }
 
-  public toArrayBuffer (): ArrayBuffer {
+  public toData (): ArrayBuffer {
     const param_guide_with_data_list: Array<ParamGuideWithData> = [];
     const param_guide_list: Array<ParamGuide> = []
 
@@ -335,7 +337,18 @@ export class Chirp {
     return buffer;
   }
 
-  public static fromArrayBuffer(buffer: ArrayBuffer): Chirp {
+  public static fromData(data: DataUnionTypes): Chirp {
+    let buffer: ArrayBuffer;
+    const data_type = Object.prototype.toString.call(data);
+    if (data_type === '[object ArrayBuffer]') {
+      buffer = data as ArrayBuffer;
+    } else if (data_type === '[object Uint8Array]') {
+      buffer = (data as Uint8Array).buffer
+    } else if (data_type === '[object DataView]') {
+      buffer = (data as DataView).buffer;
+    } else {
+      throw new Error('invalid-data-type-must-be-ArrayBuffer-or-UintArray-or-DataView');
+    }
     const buffer_view = new DataView(buffer);
 
     // 读取 tailer pos

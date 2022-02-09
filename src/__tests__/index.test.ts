@@ -38,10 +38,10 @@ test('chirp', () => {
   const data_md5 = md5(a_buffer);
 
   const time21 = new Date().getTime();
-  const new_buffer = chirp.toArrayBuffer();
+  const new_buffer = chirp.toData();
   const time22 = new Date().getTime();
   const time31 = new Date().getTime();
-  const new_chirp = Chirp.fromArrayBuffer(new_buffer);
+  const new_chirp = Chirp.fromData(new_buffer);
   const time32 = new Date().getTime();
   expect(new_chirp.getParam('message')).toBe('hello, world!');
   expect(new_chirp.getParam('str1')).toBe('2020 北京冬奥会')
