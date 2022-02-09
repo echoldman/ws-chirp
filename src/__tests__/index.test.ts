@@ -27,7 +27,6 @@ test('chirp', () => {
   const array1 = ['abc', 10, null];
   chirp.addParam('list', array1);
 
-  // TODO: 测试大内存复制的性能
   const a_buffer = new ArrayBuffer(1024*1024*32);
   const a_view = new DataView(a_buffer);
   for (let i = 0; i < a_buffer.byteLength; i++) {
@@ -39,10 +38,10 @@ test('chirp', () => {
   const data_md5 = md5(a_buffer);
 
   const time21 = new Date().getTime();
-  const new_buffer = chirp.toArrayBuffer();
+  const new_buffer = chirp.toData();
   const time22 = new Date().getTime();
   const time31 = new Date().getTime();
-  const new_chirp = Chirp.fromArrayBuffer(new_buffer);
+  const new_chirp = Chirp.fromData(new_buffer);
   const time32 = new Date().getTime();
   expect(new_chirp.getParam('message')).toBe('hello, world!');
   expect(new_chirp.getParam('str1')).toBe('2020 北京冬奥会')
