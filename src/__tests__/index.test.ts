@@ -33,11 +33,17 @@ test('chirp', () => {
   for (let i = 0; i < a_buffer.byteLength; i++) {
     a_view.setUint8(i, Math.ceil(Math.random() * 255));
   }
+  const time11 = new Date().getTime();
   chirp.addParam('data', a_buffer);
+  const time12 = new Date().getTime();
   const data_md5 = md5(a_buffer);
 
+  const time21 = new Date().getTime();
   const new_buffer = chirp.toArrayBuffer();
+  const time22 = new Date().getTime();
+  const time31 = new Date().getTime();
   const new_chirp = Chirp.fromArrayBuffer(new_buffer);
+  const time32 = new Date().getTime();
   expect(new_chirp.getParam('message')).toBe('hello, world!');
   expect(new_chirp.getParam('str1')).toBe('2020 北京冬奥会')
   expect(new_chirp.getParam('str2')).toBe('123&&');
@@ -63,6 +69,17 @@ test('chirp', () => {
   expect(expect_array1[1]).toBe(10);
   expect(expect_array1[2]).toBe(null);
 
+  const time41 = new Date().getTime();
   const expect_data = new_chirp.getParam('data') as ArrayBuffer;
+  const time42 = new Date().getTime();
   expect(md5(expect_data)).toBe(data_md5);
+
+  expect(time12 - time11).toBeLessThan(20)
+  expect(time22 - time21).toBeLessThan(20)
+  expect(time32 - time31).toBeLessThan(20)
+  expect(time42 - time41).toBeLessThan(20)
+  // console.log(`add big data time: ${time12 - time11}`)
+  // console.log(`Chirp to ArrayBuffer time: ${time22 - time21}`)
+  // console.log(`ArrayBuffer to Chirp time: ${time32 - time31}`)
+  // console.log(`get big data time: ${time42 - time41}`)
 });

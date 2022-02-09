@@ -319,27 +319,19 @@ export class Chirp {
 
     // 计算总和，并为 ArrayBuffer
     const buffer = new ArrayBuffer(buffer_length);
-    const buffer_view = new DataView(buffer);
+    const buffer_dataview = new DataView(buffer);
+    const buffer_uint8view = new Uint8Array(buffer);
     
     // 写入 tailer-pos
-    buffer_view.setBigInt64(0, BigInt(tailer_pos), true);
+    buffer_dataview.setBigInt64(0, BigInt(tailer_pos), true);
 
     // 写入所有的 params
     for (const param of param_guide_with_data_list) {
-      for (let i = 0; i < param.len; i++) {
-        const param_view = new DataView(param.data);
-        buffer_view.setUint8(param.pos + i, param_view.getUint8(i));
-      }
+      buffer_uint8view.set(new Uint8Array(param.data), param.pos);
     }
-
-    // console.log(`buffer length: ${buffer_length}`);
-    // console.log(`tailer pos: ${tailer_pos}`);
 
     // 写入 tailer
-    const tailer_view = new DataView(tailer_info.data);
-    for (let i = 0; i < tailer_info.len; i++) {
-      buffer_view.setUint8(tailer_pos + i, tailer_view.getUint8(i));
-    }
+    buffer_uint8view.set(new Uint8Array(tailer_info.data), tailer_pos);
 
     return buffer;
   }
