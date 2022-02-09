@@ -27,7 +27,6 @@ test('chirp', () => {
   const array1 = ['abc', 10, null];
   chirp.addParam('list', array1);
 
-  // TODO: 测试大内存复制的性能
   const a_buffer = new ArrayBuffer(1024*1024*32);
   const a_view = new DataView(a_buffer);
   for (let i = 0; i < a_buffer.byteLength; i++) {

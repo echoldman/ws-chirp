@@ -169,7 +169,6 @@ function getValueTypeString (value: ValueUnionTypes): string {
   } else if (prototype_string === '[object Array]') {
     return TYPE_ARRAY;
   } else if (prototype_string === '[object ArrayBuffer]') {
-    // TODO: 检查所有可能当做 bin 的数据
     return TYPE_BIN;
   } else {
     throw new Error('the-param-is-invalid-type')
@@ -338,7 +337,6 @@ export class Chirp {
 
   public static fromArrayBuffer(buffer: ArrayBuffer): Chirp {
     const buffer_view = new DataView(buffer);
-    const decoder = new TextDecoder();
 
     // 读取 tailer pos
     const tailer_pos = Number(buffer_view.getBigInt64(0, true));
