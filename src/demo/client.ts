@@ -1,4 +1,4 @@
-import { WebSocket } from 'ws';
+import { WebSocket, RawData } from 'ws';
 import { Chirp } from '../index';
 
 const client = new WebSocket('ws://127.0.0.1:3001');
@@ -11,7 +11,8 @@ client.on('open', () => {
   chirp.addParam('count', 9007199254740991);
   chirp.addParam('price', 19.99);
   chirp.addParam('skus', ['blue', 'yellow', 'red', 'green']);
-  client.send(chirp.toData());
+  const data = chirp.toData();
+  client.send(data);
   
   // const data = new ArrayBuffer(8);
   // const view = new DataView(data);
@@ -23,3 +24,9 @@ client.on('open', () => {
   // const data = chirp.toData();
   // client.send(data);
 });
+
+// client.on('message', (data: RawData) => {
+//   const data_type = Object.prototype.toString.call(data);
+//   console.log(data_type);
+//   console.log(data);
+// });

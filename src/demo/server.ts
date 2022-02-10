@@ -26,6 +26,11 @@ server.on('connection', (socket: WebSocket, request) => {
     }
   });
 
+  // const data = new ArrayBuffer(8);
+  // const view = new DataView(data);
+  // view.setBigInt64(0, BigInt(8));
+  // socket.send(data);
+
   socket.on('close', (code, reason) => {
     console.log('Socket Close:');
     console.log(`\tclose code: ${code}`);

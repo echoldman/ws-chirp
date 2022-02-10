@@ -74,14 +74,14 @@ interface ParamMap {
   [key: string]: ParamItem;
 }
 
-interface ValueTypeStringNumberLabel {
-  type: string;
-  numberLabel: NumberLabelUnionTypes;
-}
-
 interface InfoArrayBuffer {
   len: number;
   data: ArrayBuffer;
+}
+
+interface BufferInfo {
+  arraybuffer: ArrayBuffer;
+  offset: number;
 }
 
 const CHIRP_VERSION = 1;
@@ -95,8 +95,8 @@ function int64Buffer (value: CNumber): InfoArrayBuffer {
   return { len: BYTES_64BIT, data: buffer};
 }
 
-function bufferInt64 (buffer: ArrayBuffer, pos: number): CNumber {
-  const view = new DataView(buffer, pos, BYTES_64BIT);
+function bufferInt64 (buffer: BufferInfo, pos: number): CNumber {
+  const view = new DataView(buffer.arraybuffer, buffer.offset + pos, BYTES_64BIT);
   return Number(view.getBigInt64(0, true));
 }
 
@@ -107,8 +107,8 @@ function uint64Buffer (value: CNumber): InfoArrayBuffer {
   return { len: BYTES_64BIT, data: buffer };
 }
 
-function bufferUint64 (buffer: ArrayBuffer, pos: number): CNumber {
-  const view = new DataView(buffer, pos, BYTES_64BIT);
+function bufferUint64 (buffer: BufferInfo, pos: number): CNumber {
+  const view = new DataView(buffer.arraybuffer, buffer.offset + pos, BYTES_64BIT);
   return Number(view.getBigUint64(0, true))
 }
 
@@ -119,8 +119,8 @@ function float64Buffer (value: CNumber): InfoArrayBuffer {
   return { len: BYTES_64BIT, data: buffer };
 }
 
-function bufferFloat64 (buffer: ArrayBuffer, pos: number): CNumber {
-  const view = new DataView(buffer, pos);
+function bufferFloat64 (buffer: BufferInfo, pos: number): CNumber {
+  const view = new DataView(buffer.arraybuffer, buffer.offset + pos);
   return Number(view.getFloat64(0, true));
 }
 
@@ -130,9 +130,9 @@ function stringBuffer (value: CString): InfoArrayBuffer {
   return { len: uint8_array.byteLength, data: uint8_array.buffer }
 }
 
-function bufferString (buffer: ArrayBuffer, pos: number, len: number): CString {
+function bufferString (buffer: BufferInfo, pos: number, len: number): CString {
   const decoder = new TextDecoder('utf-8');
-  const view = new Uint8Array(buffer, pos, len);
+  const view = new Uint8Array(buffer.arraybuffer, buffer.offset + pos, len);
   return decoder.decode(view);
 }
 
@@ -141,7 +141,7 @@ function objectBuffer (value: CObject): InfoArrayBuffer {
   return stringBuffer(object_json);
 }
 
-function bufferObject (buffer: ArrayBuffer, pos: number, len: number): CObject {
+function bufferObject (buffer: BufferInfo, pos: number, len: number): CObject {
   const object_json = bufferString(buffer, pos, len);
   return JSON.parse(object_json);
 }
@@ -151,9 +151,13 @@ function arrayBuffer (value: CArray): InfoArrayBuffer {
   return stringBuffer(object_json);
 }
 
-function bufferArray (buffer: ArrayBuffer, pos: number, len: number): CArray {
+function bufferArray (buffer: BufferInfo, pos: number, len: number): CArray {
   const object_json = bufferString(buffer, pos, len);
   return JSON.parse(object_json); 
+}
+
+function bufferCopy (buffer: BufferInfo, pos: number, len: number): ArrayBuffer {
+  return buffer.arraybuffer.slice(buffer.offset + pos, buffer.offset + pos + len);
 }
 
 function getValueTypeString (value: ValueUnionTypes): string {
@@ -337,26 +341,27 @@ export class Chirp {
     return buffer;
   }
 
-  public static fromData(data: DataUnionTypes): Chirp {
-    let buffer: ArrayBuffer;
+  public static fromData(data: DataUnionTypes, socketOffset: number = 8): Chirp {
+    let buffer;
+    let offset = socketOffset;
     const data_type = Object.prototype.toString.call(data);
     if (data_type === '[object ArrayBuffer]') {
       buffer = data as ArrayBuffer;
     } else if (data_type === '[object Uint8Array]') {
-      buffer = (data as Uint8Array).buffer.slice(8);
+      buffer = (data as Uint8Array).buffer;
     } else if (data_type === '[object DataView]') {
-      // TODO: 确定 DataView 的 buffer_pos
       buffer = (data as DataView).buffer;
     } else {
       throw new Error('invalid-data-type-must-be-ArrayBuffer-or-UintArray-or-DataView');
     }
-    const buffer_view = new DataView(buffer);
+    const buffer_info = { arraybuffer: buffer, offset: offset };
+    const buffer_view = new DataView(buffer, offset);
 
     // 读取 tailer pos
     const tailer_pos = Number(buffer_view.getBigInt64(0, true));
 
     // 读取 tailer
-    const tailer = bufferObject(buffer, tailer_pos, buffer.byteLength - tailer_pos) as Tailer;
+    const tailer = bufferObject(buffer_info, tailer_pos, buffer.byteLength - tailer_pos - offset) as Tailer;
 
     // 检查 tailer 数据合法性
     if (getValueTypeString(tailer.version) !== TYPE_NUMBER) throw new Error('invalid-version-type-in-tailer');
@@ -378,34 +383,34 @@ export class Chirp {
 
       // 读取参数
       if (param_guide.type === TYPE_BOOLEAN) {
-        const value = bufferInt64(buffer, param_guide.pos);
+        const value = bufferInt64(buffer_info, param_guide.pos);
         chirp.addParam(param_guide.name, value === 0 ? false : true);
       } else if (param_guide.type === TYPE_NUMBER) {
         if (param_guide.numberLabel === LABEL_INT64) {
-          const value = bufferInt64(buffer, param_guide.pos);
+          const value = bufferInt64(buffer_info, param_guide.pos);
           chirp.addParam(param_guide.name, value);
         } else if (param_guide.numberLabel === LABEL_UINT64) {
-          const value = bufferUint64(buffer, param_guide.pos);
+          const value = bufferUint64(buffer_info, param_guide.pos);
           chirp.addParam(param_guide.name, value);
         } else if (param_guide.numberLabel === LABEL_FLOAT64) {
-          const value = bufferFloat64(buffer, param_guide.pos);
+          const value = bufferFloat64(buffer_info, param_guide.pos);
           chirp.addParam(param_guide.name, value);
         } else {
           throw new Error('invaild-number-label-in-tailer-param-guide');
         }
       } else if (param_guide.type === TYPE_STRING) {
-        const value = bufferString(buffer, param_guide.pos, param_guide.len);
+        const value = bufferString(buffer_info, param_guide.pos, param_guide.len);
         chirp.addParam(param_guide.name, value);
       } else if (param_guide.type === TYPE_NULL) {
         chirp.addParam(param_guide.name, null);
       } else if (param_guide.type === TYPE_OBJECT) {
-        const value = bufferObject(buffer, param_guide.pos, param_guide.len);
+        const value = bufferObject(buffer_info, param_guide.pos, param_guide.len);
         chirp.addParam(param_guide.name, value);
       } else if (param_guide.type === TYPE_ARRAY) {
-        const value = bufferArray(buffer, param_guide.pos, param_guide.len);
+        const value = bufferArray(buffer_info, param_guide.pos, param_guide.len);
         chirp.addParam(param_guide.name, value);
       } else if (param_guide.type === TYPE_BIN) {
-        chirp.addParam(param_guide.name, buffer.slice(param_guide.pos, param_guide.pos + param_guide.len));
+        chirp.addParam(param_guide.name, bufferCopy(buffer_info, param_guide.pos, param_guide.len));
       } else {
         throw new Error('invaild-type-in-tailer-param-guide');
       }
