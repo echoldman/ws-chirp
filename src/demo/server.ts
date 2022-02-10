@@ -10,12 +10,14 @@ server.on('listening', () => {
 });
 
 server.on('connection', (socket: WebSocket, request) => {
+  socket.binaryType = 'arraybuffer';
   socket.on('message', (data: RawData) => {
     const data_type = Object.prototype.toString.call(data);
     console.log(data_type);
     console.log(data);
-    if (data_type === '[object Uint8Array]') {
-      const chirp = Chirp.fromData(data as Uint8Array);
+    if (data_type === '[object ArrayBuffer]') {
+      /* 解析来自 client 的数据 */
+      const chirp = Chirp.fromData(data as ArrayBuffer);
       console.log(chirp.getParam('msg'));
       console.log(chirp.getParam('count'));
       console.log(chirp.getParam('price'));
