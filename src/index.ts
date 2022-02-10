@@ -343,8 +343,9 @@ export class Chirp {
     if (data_type === '[object ArrayBuffer]') {
       buffer = data as ArrayBuffer;
     } else if (data_type === '[object Uint8Array]') {
-      buffer = (data as Uint8Array).buffer
+      buffer = (data as Uint8Array).buffer.slice(8);
     } else if (data_type === '[object DataView]') {
+      // TODO: 确定 DataView 的 buffer_pos
       buffer = (data as DataView).buffer;
     } else {
       throw new Error('invalid-data-type-must-be-ArrayBuffer-or-UintArray-or-DataView');
