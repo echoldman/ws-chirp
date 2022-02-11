@@ -2,10 +2,12 @@ import { WebSocket, RawData } from 'ws';
 import { Chirp } from '../index';
 
 const client = new WebSocket('ws://127.0.0.1:3001');
+client.binaryType = 'arraybuffer';
 
 client.on('open', () => {
   console.log('WebSocket opened.');
 
+  /* 发送数据到 server */
   const chirp = new Chirp('hello');
   chirp.addParam('msg', 'hello, web socket.');
   chirp.addParam('count', 9007199254740991);
