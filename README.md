@@ -34,6 +34,7 @@ const data = chirp.toData();
 // ... After passing data via WebSocket
 
 const new_chirp = Chirp.fromData(data);
+console.log(new_chirp.command);
 console.log(new_chirp.getParam('msg'));
 console.log(new_chirp.getParam('count'));
 console.log(new_chirp.getParam('price'));
