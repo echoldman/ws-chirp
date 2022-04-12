@@ -19,8 +19,8 @@ interface ParamGuideWithData {
 }
 
 interface Tailer {
+  call: string;
   version: number;
-  command: string;
   paramGuides: Array<ParamGuide>;
 }
 
@@ -244,13 +244,13 @@ function convertParam (name: string, value: ValueUnionTypes, numberLabel: Number
 }
 
 export class Chirp {
+  private _call: string;
   private _version: number;
-  private _command: string;
   private _paramMap: ParamMap;
 
-  constructor (command: string) {
+  constructor (call: string) {
+    this._call = call;
     this._version = CHIRP_VERSION;
-    this._command = command;
     this._paramMap = {};
   }
 
@@ -258,8 +258,8 @@ export class Chirp {
     return this._version;
   }
 
-  public get command (): string {
-    return this._command;
+  public get call (): string {
+    return this._call;
   }
 
   public addParam (name: string, value: ValueUnionTypes): void {
@@ -308,9 +308,9 @@ export class Chirp {
     }
 
     // Tailer 的长度
-    const tailer = {
+    const tailer: Tailer = {
+      call: this._call,
       version: CHIRP_VERSION,
-      command: this._command,
       paramGuides: param_guide_list
     }
     const tailer_info = objectBuffer(tailer);
@@ -353,12 +353,12 @@ export class Chirp {
     const tailer = bufferObject(buffer, tailer_pos, buffer.byteLength - tailer_pos) as Tailer;
 
     // 检查 tailer 数据合法性
+    if (getValueTypeString(tailer.call) !== TYPE_STRING) throw new Error('invalid-call-type-in-tailer');
     if (getValueTypeString(tailer.version) !== TYPE_NUMBER) throw new Error('invalid-version-type-in-tailer');
-    if (getValueTypeString(tailer.command) !== TYPE_STRING) throw new Error('invalid-command-type-in-tailer');
     if (getValueTypeString(tailer.paramGuides) !== TYPE_ARRAY) throw new Error('invalid-param-guides-type-in-tailer');
 
     // 创建 chirp
-    const chirp = new Chirp(tailer.command);
+    const chirp = new Chirp(tailer.call);
 
     // 通过 tailer.paramGuides 读取所有参数，保存到 chirp 里
     for (const param_guide of tailer.paramGuides) {

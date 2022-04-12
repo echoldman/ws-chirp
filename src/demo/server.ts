@@ -18,6 +18,7 @@ server.on('connection', (socket: WebSocket, request) => {
     if (data_type === '[object ArrayBuffer]') {
       /* 解析来自 client 的数据 */
       const chirp = Chirp.fromData(data as ArrayBuffer);
+      console.log(chirp.call);
       console.log(chirp.getParam('msg'));
       console.log(chirp.getParam('count'));
       console.log(chirp.getParam('price'));

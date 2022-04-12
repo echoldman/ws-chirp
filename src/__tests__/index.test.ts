@@ -43,7 +43,7 @@ test('chirp', () => {
   const time31 = new Date().getTime();
   const new_chirp = Chirp.fromData(new_buffer);
   const time32 = new Date().getTime();
-  expect(new_chirp.command).toBe('hello');
+  expect(new_chirp.call).toBe('hello');
   expect(new_chirp.getParam('message')).toBe('hello, world!');
   expect(new_chirp.getParam('str1')).toBe('2020 北京冬奥会')
   expect(new_chirp.getParam('str2')).toBe('123&&');
